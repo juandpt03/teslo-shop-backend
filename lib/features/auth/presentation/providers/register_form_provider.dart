@@ -36,8 +36,10 @@ class RegisterFormNotifier extends StateNotifier<RegsiterFormState> {
 
   void rePasswordChanged(String rePassword) {
     final newPassword = state.password.value;
-    if (newPassword == rePassword) state.copyWith(passwordIsMatch: true);
-    state.copyWith(passwordIsMatch: false);
+    if (newPassword == rePassword) {
+      state = state.copyWith(passwordIsMatch: true);
+    }
+    state = state.copyWith(passwordIsMatch: false);
   }
 
   onFormSubmit() async {
