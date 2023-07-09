@@ -4,17 +4,37 @@ import 'package:teslo_shop/features/products/presentation/providers/providers.da
 
 //StateNotifie
 final productsProvider =
-    StateNotifierProvider<ProductNotifier, ProductsState>((ref) {
+    StateNotifierProvider<ProductsNotifier, ProductsState>((ref) {
   final productsRepository = ref.watch(productRepositoryProvider);
-  return ProductNotifier(productsRepository: productsRepository);
+  return ProductsNotifier(productsRepository: productsRepository);
 });
 
 //NOTIFIER
-class ProductNotifier extends StateNotifier<ProductsState> {
+class ProductsNotifier extends StateNotifier<ProductsState> {
   final ProductsRepository productsRepository;
-  ProductNotifier({required this.productsRepository}) : super(ProductsState()) {
+  ProductsNotifier({required this.productsRepository})
+      : super(ProductsState()) {
     loadNextPage();
   }
+  Future<bool> createorUpdateProduct(Map<String, dynamic> productLike) async {
+    try {
+      final product = await productsRepository.createUpdateProduct(productLike);
+      final isProductInList =
+          state.products.any((element) => element.id == product.id);
+      if (!isProductInList) {
+        state = state.copyWith(products: [product, ...state.products]);
+        return true;
+      }
+      state = state.copyWith(
+          products: state.products
+              .map((element) => (element.id == product.id) ? product : element)
+              .toList());
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
   Future loadNextPage() async {
     if (state.isLoading || state.isLastPage) return;
     state = state.copyWith(isLoading: true);

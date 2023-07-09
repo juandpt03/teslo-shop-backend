@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:teslo_shop/config/constants/enviroment.dart';
 import 'package:teslo_shop/features/products/domain/domain.dart';
+import '../errors/product_errors.dart';
 import 'package:teslo_shop/features/products/infrastructure/mappers/product_mapper.dart';
 
 class ProductsDataSourceImpl extends ProductsDataSource {
@@ -11,19 +12,71 @@ class ProductsDataSourceImpl extends ProductsDataSource {
       : dio = Dio(
           BaseOptions(
             baseUrl: Environment.apiUrl,
-            headers: {'Authorization': 'Bearer$acessToken'},
+            headers: {'Authorization': 'Bearer $acessToken'},
           ),
         );
-  @override
-  Future<Producto> createUpdateProduct(Map<String, dynamic> productLike) {
-    // TODO: implement createUpdateProduct
-    throw UnimplementedError();
+  Future<String> _uploadFile(String path) async {
+    try {
+      final fileName = path.split('/').last;
+      final FormData data = FormData.fromMap(
+          {'file': MultipartFile.fromFileSync(path, filename: fileName)});
+      final response = await dio.post('/files/product', data: data);
+      return response.data['image'];
+    } catch (e) {
+      throw Exception;
+    }
+  }
+
+  Future<List<String>> _uploadPhotos(List<String> photos) async {
+    final photosToUpload =
+        photos.where((element) => element.contains('/')).toList();
+    final photosToIgnore =
+        photos.where((element) => !element.contains('/')).toList();
+
+    final List<Future<String>> uploadJob =
+        photosToUpload.map(_uploadFile).toList();
+    final newImages = await Future.wait(uploadJob);
+
+    return [...newImages, ...photosToIgnore];
   }
 
   @override
-  Future<Producto> getProductById(String id) {
-    // TODO: implement getProductById
-    throw UnimplementedError();
+  Future<Producto> createUpdateProduct(Map<String, dynamic> productLike) async {
+    try {
+      final String? productId = productLike['id'];
+      final String method = (productId == null) ? 'POST' : 'PATCH';
+      final String url =
+          (productId == null) ? '/products' : '/products/$productId';
+
+      productLike.remove('id');
+      productLike['images'] = await _uploadPhotos(productLike['images']);
+
+      final response = await dio.request(
+        url,
+        data: productLike,
+        options: Options(
+          method: method,
+        ),
+      );
+      final product = ProductMapper.jsonToEntity(response.data);
+      return product;
+    } catch (e) {
+      throw Exception;
+    }
+  }
+
+  @override
+  Future<Producto> getProductById(String id) async {
+    try {
+      final response = await dio.get('/products/$id');
+      final product = ProductMapper.jsonToEntity(response.data);
+      return product;
+    } on DioException catch (e) {
+      if (e.response!.statusCode == 404) throw ProductNotFound();
+      throw Exception();
+    } catch (e) {
+      throw Exception();
+    }
   }
 
   @override

@@ -1,5 +1,5 @@
 import 'package:teslo_shop/config/constants/enviroment.dart';
-import 'package:teslo_shop/features/infrastructure/infrastructure.dart';
+import 'package:teslo_shop/features/auth/infrastructure/infrastructure.dart';
 import 'package:teslo_shop/features/products/domain/domain.dart';
 
 class ProductMapper {

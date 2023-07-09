@@ -9,16 +9,16 @@ class ProductCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(
-          product.title,
-          textAlign: TextAlign.center,
-        ),
         const SizedBox(
           height: 20,
         ),
         _ImageViewer(
           images: product.images,
-        )
+        ),
+        Text(
+          product.title,
+          textAlign: TextAlign.center,
+        ),
       ],
     );
   }
